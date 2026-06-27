@@ -6,7 +6,7 @@
 
 ```bash
 cd ~/nav2_ws_new
-colcon build --packages-select nav2_robocon
+colcon build --packages-select nav2_robocon_msgs nav2_robocon
 source install/setup.bash
 ```
 
@@ -19,18 +19,18 @@ ros2 launch nav2_robocon third_area_single.launch.py team:=blue  # 蓝队
 
 ## 发送导航目标
 
-### 方式一：`/nav_goal`（推荐，直接输入角度）
+### 方式一：`/navigate_to_xyaw` action（推荐，直接输入角度）
 
-类型 `std_msgs/msg/Float32MultiArray`，数据格式 `[x, y, yaw]`，yaw 单位**弧度**。
+类型 `nav2_robocon_msgs/action/NavigateToXYaw`，goal 字段为 `x`, `y`, `yaw`，yaw 单位**弧度**。
 
 ```bash
 # 导航到 (7.7, 1.6)，朝向 90°
-ros2 topic pub /nav_goal std_msgs/msg/Float32MultiArray \
-  "{data: [7.7, 1.6, 1.57]}" -1
+ros2 action send_goal /navigate_to_xyaw nav2_robocon_msgs/action/NavigateToXYaw \
+  "{x: 7.7, y: 1.6, yaw: 1.57}" --feedback
 
 # 导航到 (6.0, 2.5)，朝向 -90°（-π/2）
-ros2 topic pub /nav_goal std_msgs/msg/Float32MultiArray \
-  "{data: [6.0, 2.5, -1.57]}" -1
+ros2 action send_goal /navigate_to_xyaw nav2_robocon_msgs/action/NavigateToXYaw \
+  "{x: 6.0, y: 2.5, yaw: -1.57}" --feedback
 ```
 
 **常用角度速查：**
@@ -42,10 +42,10 @@ ros2 topic pub /nav_goal std_msgs/msg/Float32MultiArray \
 | 180° | 3.14 | → -x |
 | -90° | -1.57 | → -y |
 
-### 方式二：`/single_nav_goal`（PoseStamped，兼容 RViz）
+### 方式二：`/move_base_simple/goal`（PoseStamped，兼容 RViz）
 
 ```bash
-ros2 topic pub /single_nav_goal geometry_msgs/msg/PoseStamped \
+ros2 topic pub /move_base_simple/goal geometry_msgs/msg/PoseStamped \
   "{header: {frame_id: 'map'}, \
     pose: {position: {x: 7.7, y: 1.6}, \
            orientation: {z: 0.707, w: 0.707}}}" -1
@@ -53,23 +53,22 @@ ros2 topic pub /single_nav_goal geometry_msgs/msg/PoseStamped \
 
 ## 行为说明
 
-1. 收到目标后**立即锁定 yaw**（通过 `/desired_yaw` 控制机器人保持目标朝向）
-2. 调用 Nav2 `NavigateToPose` 导航到目标点
+1. 收到 `/navigate_to_xyaw` action goal 后**立即锁定 yaw**（通过 `/desired_yaw` 控制机器人保持目标朝向）
+2. 转发到 Nav2 `NavigateToPose` 导航到目标点
 3. **ramp 区域自动处理**（由 `ramp_zone_manager` 负责，无需手动干预）：
    - 进入斜坡 → 悬挂升高 + 最低限速
    - 离开斜坡 → 悬挂降低
    - yaw 在斜坡上保持锁定
 4. 到达目标后解除 yaw 锁定，等待下一个目标
-5. 导航中收到新目标会被忽略（需等当前导航完成）
+5. 导航中收到新 action goal 会抢占当前目标
 
 ## 节点架构
 
 ```
-/nav_goal [x,y,yaw]
-/single_nav_goal (PoseStamped)
+/navigate_to_xyaw action [x,y,yaw]
         │
         ▼
- third_area_single  ──► /desired_yaw (Float32)
+ navigate_to_xyaw_server  ──► /desired_yaw (Float32)
         │
         ▼
  NavigateToPose action ──► Nav2 (MPPI controller)

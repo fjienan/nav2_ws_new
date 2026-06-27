@@ -13,8 +13,10 @@
   <depend>std_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>tf2_ros</depend>
+  <depend>action_msgs</depend>
   <depend>nav2_bringup</depend>
   <depend>nav2_msgs</depend>
+  <depend>nav2_robocon_msgs</depend>
 
   <exec_depend>nav2_map_server</exec_depend>
   <exec_depend>nav2_controller</exec_depend>

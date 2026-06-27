@@ -23,6 +23,7 @@ setup(
             "cmd_vel_bridge = nav2_robocon.cmd_vel_bridge:main",
             "ramp_zone_manager = nav2_robocon.ramp_zone_manager:main",
             "goal_relay_node = nav2_robocon.goal_relay_node:main",
+            "navigate_to_xyaw_server = nav2_robocon.navigate_to_xyaw_server:main",
             "third_area_single = nav2_robocon.third_area_single:main",
         ],
     },

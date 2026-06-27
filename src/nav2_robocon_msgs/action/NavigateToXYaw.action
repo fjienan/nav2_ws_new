@@ -1,0 +1,12 @@
+float64 x
+float64 y
+float64 yaw
+---
+bool success
+int32 nav2_status
+string message
+---
+float64 distance_remaining
+float64 current_x
+float64 current_y
+float64 current_yaw
